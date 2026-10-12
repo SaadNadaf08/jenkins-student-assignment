@@ -2,33 +2,89 @@
 pipeline {
     agent any
 
+    parameters {
+        choice(
+            name: 'DEPLOY_ENV',
+            choices: ['development', 'staging', 'production'],
+            description: 'Select deployment environment'
+        )
+    }
+
+    environment {
+        APP_NAME = 'StudentApp'
+        VERSION = '1.0'
+    }
+
     stages {
+        stage('Information') {
+            steps {
+                echo "Application: ${APP_NAME}"
+                echo "Version: ${VERSION}"
+                echo "Environment: ${params.DEPLOY_ENV}"
+                echo "Build Number: ${BUILD_NUMBER}"
+                echo "Job Name: ${JOB_NAME}"
+                echo "Workspace: ${WORKSPACE}"
+            }
+        }
+
         stage('Build') {
             steps {
-                echo 'Compiling application...'
+                echo 'Building application...'
             }
         }
 
         stage('Test') {
             steps {
-                echo 'Running unit tests... Pass!'
+                echo 'Running tests...'
             }
         }
 
-        stage('Package') {
-            steps {
-                script {
-                    def buildInfo = "Build Number: ${env.BUILD_NUMBER}\nBuild Timestamp: ${new Date()}\n"
-                    writeFile file: 'build-info.txt', text: buildInfo
+        stage('Deploy') {
+            when {
+                expression {
+                    params.DEPLOY_ENV == 'staging'
                 }
-                echo 'Created build-info.txt'
+            }
+            steps {
+                echo 'Deploying application to STAGING...'
+            }
+        }
+
+        stage('Production Approval') {
+            when {
+                expression {
+                    params.DEPLOY_ENV == 'production'
+                }
+            }
+            steps {
+                input message: 'Approve production deployment?',
+                      ok: 'Deploy'
+            }
+        }
+
+        stage('Production Deploy') {
+            when {
+                expression {
+                    params.DEPLOY_ENV == 'production'
+                }
+            }
+            steps {
+                echo 'Deploying application to PRODUCTION...'
             }
         }
     }
 
     post {
         success {
-            echo 'Build successful! Ready for release.'
+            echo 'Pipeline completed successfully.'
+        }
+
+        failure {
+            echo 'Pipeline failed. Check the console output.'
+        }
+
+        always {
+            echo 'Pipeline execution completed.'
         }
     }
 }
