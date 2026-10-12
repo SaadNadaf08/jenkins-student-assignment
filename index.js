@@ -1,6 +1,6 @@
 // index.js - Simple sample application
 function main() {
-  console.log("Hello, World!");
+  console.log("Hello, Universe!");
 }
 
 main();
